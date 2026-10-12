@@ -8,7 +8,7 @@ const path = require("path");
 const { PID_FILE } = require("../server");
 
 const root = path.join(__dirname, "..");
-const manifest = path.join(root, "manifest.http.xml");
+const manifests = ["manifest.http.xml", "manifest.prod.xml"].map((name) => path.join(root, name)).filter((file) => fs.existsSync(file));
 
 // Proses yang sedang mendengarkan di sebuah port.
 function listeners(port) {
@@ -38,8 +38,8 @@ function stopServer() {
 
 console.log(stopServer() ? "Server add-in dimatikan." : "Server add-in memang tidak sedang menyala.");
 
-if (fs.existsSync(manifest)) {
+for (const manifest of manifests) {
   spawnSync(process.execPath, [require.resolve("office-addin-dev-settings/cli.js"), "unregister", manifest], { stdio: "ignore" });
-  console.log("Add-in dilepas dari Office.");
 }
+if (manifests.length) console.log("Add-in dilepas dari Office.");
 console.log("\nAdd-in nonaktif. Aplikasi Office yang sedang terbuka tidak ditutup; tombol AI Assistant hilang setelah aplikasinya dibuka ulang.");

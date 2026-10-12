@@ -9,6 +9,7 @@
     "start:powerpoint": "node tools/start.js powerpoint",
     "start:all": "node tools/start.js word excel powerpoint",
     "stop": "node tools/stop.js",
+    "rilis": "node tools/publish.js",
     "serve": "node server.js --http",
     "serve:https": "node server.js",
     "preview": "node server.js --http --mock",

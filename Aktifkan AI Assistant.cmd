@@ -1,7 +1,8 @@
 @echo off
 rem Klik dua kali untuk mengaktifkan add-in AI Assistant.
 rem Pilihan aplikasi diingat: lain kali langsung terbuka setelah hitung mundur 3 detik (tekan G untuk ganti).
-rem Server add-in berjalan di latar belakang; jendela ini menutup sendiri kalau semuanya lancar.
+rem Add-in dimuat dari GitHub Pages (tanpa server lokal). Buka Word/Excel/PowerPoint lewat skrip ini;
+rem kalau dibuka dengan cara biasa, tombol AI Assistant tidak muncul. Jendela ini menutup sendiri kalau lancar.
 rem Bisa juga langsung dengan nama aplikasinya:  "Aktifkan AI Assistant.cmd" excel
 title Aktifkan AI Assistant
 cd /d "%~dp0"
@@ -56,7 +57,7 @@ if not exist "%LOCALAPPDATA%\Office AI Assistant" mkdir "%LOCALAPPDATA%\Office A
 
 :run
 echo.
-node tools\start.js %APPS% --background
+node tools\start.js %APPS% --background --hosted
 set "CODE=%errorlevel%"
 if not "%CODE%"=="0" (
   echo.

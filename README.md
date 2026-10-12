@@ -68,21 +68,31 @@ npm install
 
 Cara termudah di Windows, tanpa terminal: klik dua kali
 
-- **`Aktifkan AI Assistant.cmd`** — pilih Word, Excel, PowerPoint, atau ketiganya. Server lokal menyala di latar
-  belakang dan aplikasinya terbuka dengan panel AI Assistant. Pilihannya diingat: lain kali cukup klik dua kali dan
-  tunggu 3 detik (tekan **G** kalau ingin memilih aplikasi lain). Jendela skripnya menutup sendiri kalau semuanya
-  lancar; kalau ada yang perlu dibaca, jendelanya tetap terbuka.
-- **`Nonaktifkan AI Assistant.cmd`** — mematikan server dan melepas add-in dari Office. Aplikasi Office yang sedang
-  terbuka tidak ditutup.
+- **`Aktifkan AI Assistant.cmd`** — pilih Word, Excel, PowerPoint, atau ketiganya. Aplikasinya terbuka dengan panel
+  AI Assistant, dimuat dari GitHub Pages (tanpa server lokal, perlu internet). Pilihannya diingat: lain kali cukup
+  klik dua kali dan tunggu 3 detik (tekan **G** kalau ingin memilih aplikasi lain). Jendela skripnya menutup sendiri
+  kalau semuanya lancar; kalau ada yang perlu dibaca, jendelanya tetap terbuka.
+- **`Nonaktifkan AI Assistant.cmd`** — melepas add-in dari Office (dan mematikan server lokal kalau menyala).
+  Aplikasi Office yang sedang terbuka tidak ditutup.
 
-Server tidak ikut menyala sendiri setelah komputer dinyalakan ulang; jalankan lagi skrip aktivasinya.
+**Buka aplikasinya lewat skrip ini setiap kali.** Word, Excel, atau PowerPoint yang dibuka dengan cara biasa (menu
+Start, klik dua kali dokumen, pintasan taskbar) tidak memuat add-in, jadi tombol AI Assistant tidak muncul. Add-in
+pengembang hanya termuat pada aplikasi yang dimulai lewat skrip.
+
+**Agar tombolnya selalu muncul, walau aplikasinya dibuka dengan cara biasa:** klik dua kali
+**`Pasang Permanen.cmd`** sekali saja dan setujui permintaan administrator dari Windows. Skrip itu membuat satu
+folder berbagi hanya-baca berisi `manifest.prod.xml` dan mendaftarkannya sebagai katalog tepercaya di Office. Karena
+mengubah pengaturan keamanan Office, skrip ini sengaja dijalankan sendiri oleh pemilik komputer. Sesudahnya, di
+tiap aplikasi sekali saja: **Insert → Add-ins → My Add-ins → tab Shared Folder → AI Assistant → Add**. Setelah itu
+tombol AI Assistant ada di tab Home setiap kali. `Pasang Permanen.cmd -Periksa` hanya menampilkan rencananya tanpa
+mengubah apa pun; `-Lepas` membatalkan semuanya. Skrip ini belum diuji sampai ke tampilan Word-nya.
 
 **Dokumen kosong yang terbuka bersama add-in bersifat sementara.** Berkasnya ada di folder Temp dan dibuat ulang
 setiap kali add-in diaktifkan. Simpan pekerjaan dengan Save As ke folder lain, atau buka berkas Anda sendiri lewat
 File → Open. Kalau telanjur menyimpan di dokumen sementara itu, aktivasi berikutnya menyalinnya dulu ke folder
 `Dokumen tersimpan` di dalam proyek.
 
-Lewat terminal:
+Mode pengembangan (server lokal, untuk mencoba perubahan sebelum dikirim ke GitHub), lewat terminal:
 
 ```bash
 npm start
@@ -96,8 +106,8 @@ Dua hal yang perlu diketahui:
 
 - **Tutup dulu aplikasinya.** Add-in hanya termuat kalau Word (atau Excel/PowerPoint) dimulai lewat skrip atau
   perintah itu. Dokumen yang dibuka ke aplikasi yang sudah berjalan tidak memuatnya.
-- **Server harus menyala** selama add-in dipakai. Dengan `npm start`, jendela terminalnya jangan ditutup; dengan
-  skrip `.cmd`, server tetap menyala sampai dinonaktifkan atau komputer dimatikan.
+- **Server harus menyala** selama add-in dipakai (khusus `npm start`): jendela terminalnya jangan ditutup. Skrip
+  `.cmd` tidak memakai server, jadi bagian ini tidak berlaku untuknya.
 
 Setelah panel terbuka: tempel API key di **Pengaturan**, klik **Muat daftar model** kalau ingin memilih model, lalu
 mulai memberi perintah. Untuk memakai add-in pada berkas Anda sendiri, buka berkasnya dari Word yang dimulai tadi
@@ -113,6 +123,18 @@ Supaya tidak perlu menyalakan server setiap kali:
 2. Di GitHub: **Settings → Pages → Deploy from a branch → `main`, folder `/docs`**.
 3. `npm run manifest -- https://NAMA.github.io/REPO`
 4. Tutup Word, lalu `npm run sideload` (`sideload:excel`, `sideload:powerpoint` untuk yang lain).
+
+**Memperbarui add-in.** Ubah berkas di `docs/`, lalu jalankan:
+
+```bash
+npm run rilis -- "Pesan singkat tentang perubahannya"
+```
+
+Perintah ini memeriksa rahasia (API key, token, kunci privat, berkas `.env`), menampilkan berkas yang akan dikirim,
+bertanya konfirmasi, lalu commit dan push. Kalau ada yang tampak seperti rahasia, tidak ada yang dikirim. Pages
+membangun ulang dalam sekitar 1 menit; tutup panel AI Assistant lalu buka lagi untuk memuat versi baru (cache
+browser sampai 10 menit). Tambahkan `--dry-run` untuk hanya melihat apa yang akan dikirim. Kalau `manifest.xml`
+berubah, `manifest.prod.xml` dibuat ulang otomatis dan setiap komputer pengguna perlu `npm run sideload` lagi.
 
 Cara resmi Microsoft tanpa perintah: taruh `manifest.prod.xml` di folder jaringan, daftarkan di **File → Options →
 Trust Center → Trust Center Settings → Trusted Add-in Catalogs** (centang *Show in Menu*), mulai ulang Office, lalu
@@ -225,6 +247,7 @@ docs/                     add-in itu sendiri; folder inilah yang di-host
 tools/
   start.js                  npm start, dan "Aktifkan AI Assistant.cmd"
   stop.js                   npm stop, dan "Nonaktifkan AI Assistant.cmd"
+  publish.js                npm run rilis: periksa rahasia, commit, dan push ke GitHub
   make-manifest.js          membuat manifest.http.xml / manifest.prod.xml
   mock-llm.js               AI tiruan
   dev-bridge*.js, dev-run.js  jembatan uji: menjalankan potongan JS di panel yang terbuka (npm run dev)

@@ -3,12 +3,15 @@
 //   npm start                                  → Word, server di jendela ini (Ctrl+C untuk berhenti)
 //   node tools/start.js word excel             → beberapa aplikasi sekaligus
 //   node tools/start.js word --background      → server di latar belakang; matikan dengan tools/stop.js
+//   node tools/start.js word --hosted          → tanpa server: add-in dimuat dari GitHub Pages
+//                                                (alamatnya dibaca dari manifest.prod.xml)
 //
 // Aplikasinya harus dibuka lewat perintah ini: add-in pengembang hanya termuat pada dokumen yang
 // ikut menyalakan aplikasi, bukan pada dokumen yang dibuka ke aplikasi yang sudah berjalan.
 const { spawn, spawnSync } = require("child_process");
 const fs = require("fs");
 const http = require("http");
+const https = require("https");
 const net = require("net");
 const os = require("os");
 const path = require("path");
@@ -17,11 +20,12 @@ const PORT = 3000;
 const PROCESS = { word: "WINWORD.EXE", excel: "EXCEL.EXE", powerpoint: "POWERPNT.EXE" };
 const DOCUMENT = { word: ["Word", ".docx"], excel: ["Excel", ".xlsx"], powerpoint: ["PowerPoint", ".pptx"] };
 const root = path.join(__dirname, "..");
-const manifest = path.join(root, "manifest.http.xml");
 const KEPT = path.join(root, "Dokumen tersimpan");
 const STAMPS = path.join(os.tmpdir(), "office-ai-addin-documents.json");
 const args = process.argv.slice(2);
 const background = args.includes("--background");
+const hosted = args.includes("--hosted");
+const manifest = path.join(root, hosted ? "manifest.prod.xml" : "manifest.http.xml");
 const apps = args.filter((a) => !a.startsWith("--")).map((a) => a.toLowerCase());
 if (!apps.length) apps.push("word");
 
@@ -45,6 +49,13 @@ const serving = () =>
     });
     request.on("error", () => resolve(false));
     request.setTimeout(3000, () => request.destroy());
+  });
+
+const reachable = (url) =>
+  new Promise((resolve) => {
+    const request = https.get(url, (response) => (response.resume(), resolve(response.statusCode === 200)));
+    request.on("error", () => resolve(false));
+    request.setTimeout(5000, () => request.destroy());
   });
 
 function running(image) {
@@ -72,7 +83,7 @@ function readStamps() {
 
 function rescue(app) {
   const file = sideloadDocument(app);
-  const stamp = readStamps()[app];
+  const stamp = readStamps()[file];
   if (!stamp || !fs.existsSync(file)) return;
   const changed = fs.statSync(file).mtime;
   if (changed.getTime() === stamp) return;
@@ -87,7 +98,7 @@ function rescue(app) {
 function remember(app) {
   const file = sideloadDocument(app);
   if (!fs.existsSync(file)) return;
-  fs.writeFileSync(STAMPS, JSON.stringify({ ...readStamps(), [app]: fs.statSync(file).mtime.getTime() }));
+  fs.writeFileSync(STAMPS, JSON.stringify({ ...readStamps(), [file]: fs.statSync(file).mtime.getTime() }));
 }
 
 (async () => {
@@ -98,7 +109,15 @@ function remember(app) {
   }
 
   let server = null;
-  if (await listening()) {
+  if (hosted) {
+    if (!fs.existsSync(manifest)) {
+      console.error("manifest.prod.xml tidak ada. Buat dulu: npm run manifest -- https://NAMA.github.io/REPO");
+      process.exit(1);
+    }
+    const page = (fs.readFileSync(manifest, "utf8").match(/<SourceLocation DefaultValue="([^"]+)"/) || [])[1];
+    if (page && (await reachable(page))) console.log(`Add-in dimuat dari ${page}`);
+    else console.log(`Peringatan: ${page || "alamat add-in"} tidak bisa dijangkau. Periksa koneksi internet; panelnya tidak akan terbuka tanpa itu.`);
+  } else if (await listening()) {
     if (!(await serving())) {
       console.error(`Port ${PORT} sedang dipakai program lain, jadi server add-in tidak bisa menyala. Tutup program itu lalu coba lagi.`);
       process.exit(1);
@@ -117,7 +136,7 @@ function remember(app) {
     }
   }
 
-  node(path.join(__dirname, "make-manifest.js"), `http://localhost:${PORT}`);
+  if (!hosted) node(path.join(__dirname, "make-manifest.js"), `http://localhost:${PORT}`);
   settings("register", manifest);
   const skipped = [];
   for (const app of apps) {
@@ -142,6 +161,7 @@ function remember(app) {
     "\nDokumen kosong yang terbuka bersama add-in bersifat sementara dan dibuat ulang setiap aktivasi. " +
       "Simpan pekerjaan Anda dengan Save As ke folder lain, atau buka berkas Anda sendiri lewat File > Open.",
   );
-  if (background) console.log('\nAdd-in aktif. Untuk mematikannya, jalankan "Nonaktifkan AI Assistant.cmd".');
+  console.log("Buka aplikasinya lewat skrip ini setiap kali. Kalau dibuka dengan cara biasa (menu Start, klik dua kali dokumen), tombol AI Assistant tidak muncul.");
+  if (background) console.log('\nAdd-in aktif. Untuk melepasnya dari Office, jalankan "Nonaktifkan AI Assistant.cmd".');
   else if (server) console.log("\nBiarkan jendela ini terbuka selama add-in dipakai. Ctrl+C untuk mematikan server.");
 })();
