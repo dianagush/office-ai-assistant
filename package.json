@@ -1,0 +1,30 @@
+{
+  "name": "office-ai-addin",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Agen AI untuk Word, Excel, dan PowerPoint dengan API key sendiri (Gemini, DeepSeek, dan lainnya).",
+  "scripts": {
+    "start": "node tools/start.js word",
+    "start:excel": "node tools/start.js excel",
+    "start:powerpoint": "node tools/start.js powerpoint",
+    "start:all": "node tools/start.js word excel powerpoint",
+    "stop": "node tools/stop.js",
+    "serve": "node server.js --http",
+    "serve:https": "node server.js",
+    "preview": "node server.js --http --mock",
+    "dev": "node server.js --http --mock --dev",
+    "validate": "office-addin-manifest validate manifest.xml",
+    "manifest": "node tools/make-manifest.js",
+    "sideload": "office-addin-dev-settings sideload manifest.prod.xml desktop --app word",
+    "sideload:excel": "office-addin-dev-settings sideload manifest.prod.xml desktop --app excel",
+    "sideload:powerpoint": "office-addin-dev-settings sideload manifest.prod.xml desktop --app powerpoint",
+    "unsideload": "office-addin-dev-settings unregister manifest.prod.xml",
+    "vendor": "node -e \"require('fs').copyFileSync('node_modules/pptxgenjs/dist/pptxgen.bundle.js', 'docs/vendor/pptxgen.bundle.js')\""
+  },
+  "devDependencies": {
+    "office-addin-dev-certs": "^3.0.1",
+    "office-addin-dev-settings": "^4.0.1",
+    "office-addin-manifest": "^3.0.1",
+    "pptxgenjs": "^4.0.1"
+  }
+}

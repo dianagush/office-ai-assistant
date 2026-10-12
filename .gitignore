@@ -1,0 +1,13 @@
+node_modules/
+.dev-token
+manifest.http.xml
+Dokumen tersimpan/
+
+# Jaga-jaga supaya rahasia tidak ikut terunggah ke repositori publik
+.env
+.env.*
+*.pem
+*.key
+*.pfx
+*.crt
+*.log

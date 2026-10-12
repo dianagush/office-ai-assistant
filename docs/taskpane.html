@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI Assistant</title>
+    <link rel="icon" href="assets/icon-32.png" />
+    <link rel="stylesheet" href="taskpane.css" />
+    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+  </head>
+  <body>
+    <header class="bar">
+      <button id="model-chip" class="chip" type="button" title="Ganti penyedia atau model"></button>
+      <span class="grow"></span>
+      <button id="open-history" class="icon" type="button" title="Riwayat percakapan" aria-label="Riwayat percakapan">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" /><path d="M12 8v4l3 2" /></svg>
+      </button>
+      <button id="new-chat" class="icon" type="button" title="Chat baru" aria-label="Chat baru">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+      </button>
+      <button id="open-settings" class="icon" type="button" title="Pengaturan" aria-label="Pengaturan">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 6h8M16 6h4M4 12h2M10 12h10M4 18h10M18 18h2" />
+          <circle cx="14" cy="6" r="2" /><circle cx="8" cy="12" r="2" /><circle cx="16" cy="18" r="2" />
+        </svg>
+      </button>
+    </header>
+
+    <div id="peers" class="peers" hidden></div>
+
+    <main id="chat" class="chat">
+      <div id="empty" class="empty">
+        <img src="assets/icon-64.png" alt="" width="40" height="40" />
+        <p id="empty-hint"></p>
+      </div>
+    </main>
+
+    <footer class="composer">
+      <div id="status" class="status" role="status" hidden></div>
+      <div id="notice" class="notice" role="status" hidden></div>
+      <div id="quick" class="quick" hidden></div>
+      <div class="box">
+        <textarea id="input" rows="2" placeholder="Tulis perintah…" aria-label="Perintah untuk AI"></textarea>
+        <div class="box-row">
+          <select id="context" title="Bagian dokumen yang ikut dikirim ke AI" aria-label="Konteks dokumen" hidden></select>
+          <span class="grow"></span>
+          <button id="send" class="primary" type="button">Kirim</button>
+        </div>
+      </div>
+    </footer>
+
+    <section id="settings" class="sheet" aria-label="Pengaturan" hidden>
+      <div class="sheet-head">
+        <h2>Pengaturan</h2>
+        <button id="close-settings" class="primary" type="button">Selesai</button>
+      </div>
+      <p id="settings-alert" class="notice info" hidden></p>
+
+      <label for="provider">Penyedia AI</label>
+      <select id="provider"></select>
+      <p id="provider-note" class="hint"></p>
+
+      <label for="api-key">API key</label>
+      <input id="api-key" type="password" autocomplete="off" spellcheck="false" placeholder="Tempel API key di sini" />
+      <p class="hint"><a id="key-link" target="_blank" rel="noopener">Buat API key ↗</a></p>
+
+      <label for="model">Model</label>
+      <input id="model" type="text" autocomplete="off" spellcheck="false" placeholder="ID model" />
+      <div class="inline">
+        <button id="load-models" type="button">Muat daftar model</button>
+        <select id="model-pick" aria-label="Pilih model dari daftar" hidden></select>
+      </div>
+      <p id="models-status" class="hint"></p>
+
+      <label for="base-url">Base URL</label>
+      <input id="base-url" type="url" autocomplete="off" spellcheck="false" placeholder="https://…/v1" />
+
+      <h3>Cara kerja</h3>
+      <label class="check"><input id="agent" type="checkbox" /> Mode agen: AI membaca dan mengubah dokumen langsung</label>
+      <label class="check"><input id="confirm-writes" type="checkbox" /> Minta izin sebelum setiap perubahan</label>
+      <label class="check" id="track-row" hidden><input id="track-changes" type="checkbox" /> Catat perubahan sebagai tracked changes</label>
+      <label class="check"><input id="cross-app" type="checkbox" /> Pakai juga aplikasi Office lain yang panelnya terbuka</label>
+      <p class="hint">Tindakan yang tidak bisa dibatalkan (menghapus sheet, baris, atau slide) selalu minta izin.</p>
+
+      <label for="instructions" id="instructions-label">Instruksi tetap</label>
+      <textarea id="instructions" rows="4" placeholder="Mis. pakai bahasa formal; format angka dengan pemisah ribuan."></textarea>
+      <p class="hint">Berlaku di setiap percakapan pada aplikasi ini.</p>
+
+      <h3>Skills</h3>
+      <p class="hint">Resep instruksi untuk tugas berulang. AI membaca isinya saat tugasnya cocok.</p>
+      <div id="skills"></div>
+      <button id="add-skill" type="button">Tambah skill</button>
+
+      <p class="hint privacy">
+        API key dan riwayat percakapan disimpan hanya di perangkat ini. API key dikirim langsung ke penyedia yang
+        dipilih; isi dokumen yang dibaca AI diproses oleh penyedia tersebut.
+      </p>
+    </section>
+
+    <section id="history" class="sheet" aria-label="Riwayat percakapan" hidden>
+      <div class="sheet-head">
+        <h2>Riwayat</h2>
+        <button id="close-history" class="primary" type="button">Tutup</button>
+      </div>
+      <p class="hint">Tersimpan di perangkat ini.</p>
+      <p id="history-scope" class="hint" hidden>
+        <span id="history-scope-text"></span>
+        <button id="history-scope-toggle" class="link" type="button"></button>
+      </p>
+      <p id="history-empty" class="hint" hidden></p>
+      <ul id="chats" class="chats"></ul>
+      <button id="clear-history" type="button" hidden>Hapus semua riwayat</button>
+    </section>
+
+    <script type="module" src="taskpane.js"></script>
+  </body>
+</html>
